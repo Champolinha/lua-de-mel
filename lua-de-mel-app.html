@@ -693,8 +693,8 @@
 
 <!-- ═══════════════════ SCRIPTS ═══════════════════ -->
 <!-- Google APIs -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://apis.google.com/js/api.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -705,27 +705,12 @@ const CONFIG = {
   DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
 };
 
-// Tabs to map in the app
-const SHEET_TABS = {
-  ROTEIRO:   'Roteiro',
-  HOTEL:     'Hotel',
-  PASSAGENS: 'Passagens',
-  CUSTOS:    'Custos',
-  CHECKLIST: 'Checklist',
-  PASSEIOS:  'Passeios',
-};
-
 let tokenClient = null;
-let gapiLoaded   = false;
-let gisLoaded    = false;
 let accessToken  = null;
 
-// Persistent config
 function loadConfig() {
-  try {
-    const cfg = JSON.parse(localStorage.getItem('luaDemelConfig') || '{}');
-    return cfg;
-  } catch(e){ return {}; }
+  try { return JSON.parse(localStorage.getItem('luaDemelConfig') || '{}'); }
+  catch(e){ return {}; }
 }
 function saveConfigData(c) {
   localStorage.setItem('luaDemelConfig', JSON.stringify(c));
@@ -735,7 +720,7 @@ function saveConfigData(c) {
 //  INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load', () => {
-  setTimeout(initApp, 1200);
+  setTimeout(initApp, 1400);
 });
 
 function initApp() {
@@ -745,74 +730,81 @@ function initApp() {
     showSetup();
     return;
   }
-  CONFIG.CLIENT_ID  = cfg.clientId;
-  CONFIG.SHEET_ID   = cfg.sheetId || '1IeUKAAX4eH6GJaiqjHMskl2nJMXL8ht0Or85t98xzFk';
-  loadGoogleLibs();
+  CONFIG.CLIENT_ID = cfg.clientId;
+  CONFIG.SHEET_ID  = cfg.sheetId || '1IeUKAAX4eH6GJaiqjHMskl2nJMXL8ht0Or85t98xzFk';
+  hideSplash();
+  showApp();
+  waitForLibs();
 }
 
-function loadGoogleLibs() {
-  // Attempt to load GAPI
-  function tryInit() {
-    if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-      gapi.load('client', initGapiClient);
-    } else {
-      setTimeout(tryInit, 200);
-    }
+function waitForLibs(attempt) {
+  attempt = attempt || 0;
+  if (attempt > 30) {
+    showLoginBanner('❌ Erro ao carregar bibliotecas do Google. Recarregue a página.');
+    return;
   }
-  tryInit();
+  if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+    gapi.load('client', async () => {
+      try {
+        await gapi.client.init({ discoveryDocs: CONFIG.DISCOVERY_DOCS });
+        setupTokenClient();
+        tryAutoLogin();
+      } catch(e) {
+        console.error('gapi init error', e);
+        showLoginBanner('⚠️ Erro ao iniciar Google API. Toque para tentar novamente.', true);
+      }
+    });
+  } else {
+    setTimeout(() => waitForLibs(attempt + 1), 300);
+  }
 }
 
-async function initGapiClient() {
-  await gapi.client.init({
-    discoveryDocs: CONFIG.DISCOVERY_DOCS,
-  });
-  gapiLoaded = true;
-  initGis();
-}
-
-function initGis() {
+function setupTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.CLIENT_ID,
     scope: CONFIG.SCOPES,
     callback: handleTokenResponse,
   });
-  gisLoaded = true;
+}
 
-  // Check for stored token
-  const storedToken = localStorage.getItem('luaDemelToken');
-  if (storedToken) {
+function tryAutoLogin() {
+  // Try stored token first
+  const stored = localStorage.getItem('luaDemelToken');
+  if (stored) {
     try {
-      const td = JSON.parse(storedToken);
+      const td = JSON.parse(stored);
       if (td.expiry > Date.now()) {
         gapi.client.setToken({ access_token: td.token });
         accessToken = td.token;
-        hideSplash();
-        showApp();
+        hideLoginBanner();
         syncAll();
         return;
       }
-    } catch(e){}
+    } catch(e) {}
   }
-  hideSplash();
-  showApp();
-  requestAuth();
+  // No valid token — show login button
+  showLoginBanner('👋 Toque aqui para entrar com o Google e carregar sua planilha', true);
 }
 
 function handleTokenResponse(resp) {
-  if (resp.error) { showToast('❌ Erro ao autenticar: ' + resp.error); return; }
+  if (resp.error) {
+    showLoginBanner('❌ Erro: ' + resp.error + '. Toque para tentar novamente.', true);
+    return;
+  }
   accessToken = resp.access_token;
   const expiry = Date.now() + (resp.expires_in - 60) * 1000;
   localStorage.setItem('luaDemelToken', JSON.stringify({ token: accessToken, expiry }));
+  hideLoginBanner();
   syncAll();
 }
 
 function requestAuth() {
-  if (!tokenClient) { showToast('⏳ Aguarde, carregando...'); setTimeout(requestAuth, 1000); return; }
-  if (gapi.client.getToken() === null) {
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  } else {
-    tokenClient.requestAccessToken({ prompt: '' });
+  if (!tokenClient) {
+    showLoginBanner('⏳ Aguarde...', false);
+    setTimeout(requestAuth, 800);
+    return;
   }
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 
 function signOut() {
@@ -821,8 +813,36 @@ function signOut() {
   if (token) google.accounts.oauth2.revoke(token.access_token, () => {});
   gapi.client.setToken('');
   localStorage.removeItem('luaDemelToken');
+  accessToken = null;
   document.getElementById('user-avatar').textContent = '?';
+  showLoginBanner('👋 Toque aqui para entrar com o Google novamente', true);
   showToast('Desconectado com sucesso');
+}
+
+// ─── Login Banner ───
+function showLoginBanner(msg, clickable) {
+  let banner = document.getElementById('login-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'login-banner';
+    banner.style.cssText = `
+      position:fixed; top:var(--header-h); left:0; right:0; z-index:60;
+      background:linear-gradient(135deg,var(--rose),var(--rose-light));
+      color:#fff; text-align:center; padding:13px 20px;
+      font-size:13px; font-weight:500; line-height:1.4;
+      box-shadow:0 4px 16px rgba(109,45,78,0.25);
+      cursor:pointer; transition:opacity 0.3s;
+    `;
+    document.getElementById('app').appendChild(banner);
+  }
+  banner.textContent = msg;
+  banner.style.display = 'block';
+  banner.onclick = clickable ? requestAuth : null;
+}
+
+function hideLoginBanner() {
+  const banner = document.getElementById('login-banner');
+  if (banner) banner.style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════
@@ -878,24 +898,43 @@ function saveConfig() {
   document.getElementById('setup-screen').classList.remove('visible');
   CONFIG.CLIENT_ID = clientId;
   CONFIG.SHEET_ID  = sheetId;
-  loadGoogleLibs();
   showApp();
+  waitForLibs();
 }
 
 // ═══════════════════════════════════════════════
 //  SHEETS API
 // ═══════════════════════════════════════════════
 async function readSheet(range) {
-  if (!gapi.client.sheets) return null;
+  if (!gapi.client.sheets) {
+    console.warn('gapi.client.sheets não está pronto');
+    return null;
+  }
   try {
     const resp = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: CONFIG.SHEET_ID,
       range: range,
     });
-    return resp.result.values || [];
+    const values = resp.result.values || [];
+    console.log(`✅ Leu "${range}": ${values.length} linhas`);
+    return values;
   } catch(e) {
-    console.error('Erro ao ler', range, e);
+    console.error(`❌ Erro ao ler "${range}":`, e?.result?.error?.message || e);
     return null;
+  }
+}
+
+// Diagnóstico — chame diagnostico() no console para ver o que está sendo lido
+async function diagnostico() {
+  const abas = ['Custos', 'Checklist', 'Hotel', 'Passagens', 'Passeios', 'Roteiro final'];
+  console.log('=== DIAGNÓSTICO DAS ABAS ===');
+  for (const aba of abas) {
+    const data = await readSheet(`${aba}!A1:E5`);
+    if (data && data.length > 0) {
+      console.log(`✅ "${aba}" — ${data.length} linhas. Primeiras células:`, data[0]);
+    } else {
+      console.log(`❌ "${aba}" — sem dados ou aba não encontrada`);
+    }
   }
 }
 
@@ -943,7 +982,14 @@ async function syncAll() {
 // ═══════════════════════════════════════════════
 async function loadCustosData() {
   const data = await readSheet('Custos!A1:C20');
-  if (!data) return;
+  if (!data) {
+    showToast('⚠️ Não foi possível ler a aba "Custos"');
+    return;
+  }
+  if (data.length === 0) {
+    showToast('⚠️ Aba "Custos" está vazia');
+    return;
+  }
 
   // Row 1: [empty, totalBudget, remaining]
   // Rows 2+: [categoria, valor]
@@ -976,17 +1022,17 @@ async function loadCustosData() {
   const pct = totalBudget > 0 ? Math.min(100, (totalSpent/totalBudget)*100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
 
-  // Category values
-  const catMap = {
-    'Passagens':    'cat-passagens',
-    'Hoteis':       'cat-hoteis',
-    'Hotel':        'cat-hoteis',
-    'Passeios':     'cat-passeios',
-    'Comida':       'cat-comida',
-  };
-  Object.entries(catMap).forEach(([k, elId]) => {
-    const el = document.getElementById(elId);
-    if (el && cats[k] !== undefined) el.textContent = formatBRL(cats[k]);
+  // Category values — match flexibly
+  const elPassagens = document.getElementById('cat-passagens');
+  const elHoteis    = document.getElementById('cat-hoteis');
+  const elPasseios  = document.getElementById('cat-passeios');
+  const elComida    = document.getElementById('cat-comida');
+
+  Object.entries(cats).forEach(([k, v]) => {
+    if (/passagen/i.test(k) && elPassagens) elPassagens.textContent = formatBRL(v);
+    if (/hotel|hosped/i.test(k) && elHoteis)    elHoteis.textContent    = formatBRL(v);
+    if (/passeio/i.test(k) && elPasseios)  elPasseios.textContent  = formatBRL(v);
+    if (/comida|alimenta|restaur/i.test(k) && elComida)    elComida.textContent    = formatBRL(v);
   });
 
   // Custos page
@@ -1016,9 +1062,9 @@ async function loadRoteiro() {
   const container = document.getElementById('itinerary-container');
   container.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Carregando roteiro...</div></div>';
 
-  const data = await readSheet('Roteiro!A1:Z200');
+  const data = await readSheet('Roteiro final!A1:Z200');
   if (!data || data.length === 0) {
-    container.innerHTML = '<div class="empty-state"><span class="empty-icon">🗺️</span>Nenhum dado encontrado na aba "Roteiro".<br>Verifique se o nome da aba está correto.</div>';
+    container.innerHTML = '<div class="empty-state"><span class="empty-icon">🗺️</span>Nenhum dado encontrado na aba "Roteiro final".<br>Verifique se o nome da aba está correto.</div>';
     return;
   }
 
