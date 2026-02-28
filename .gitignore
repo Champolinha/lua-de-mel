@@ -8,3 +8,6 @@ excel_data.json
 app-development-expert/
 ui-ux-master-analyzer/
 stitch/
+dist/
+.env
+.vite/
