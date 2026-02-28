@@ -5,9 +5,4 @@ excel_data.json
 .agent/
 .agents/
 .gemini/
-app-development-expert/
-ui-ux-master-analyzer/
 stitch/
-dist/
-.env
-.vite/
