@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FFFFFF</color>
-    <color name="colorPrimaryDark">#FFFFFF</color>
-    <color name="colorAccent">#000000</color>
+    <!-- Essa é a cor vinho/escura que peguei do seu print -->
+    <color name="colorPrimary">#2D1B22</color>
+    <color name="colorPrimaryDark">#1A1014</color>
+    <color name="colorAccent">#E91E63</color>
 </resources>
