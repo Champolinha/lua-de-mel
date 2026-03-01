@@ -8,7 +8,7 @@ import UtilsTab from './components/UtilsTab';
 import AddModal from './components/AddModal';
 
 function App() {
-  const { data: combinedData, loading, refreshing, refreshData, localData, setLocalData, handleAddLocalItem, handleAddExtraCost } = useTripData();
+  const { data: combinedData, loading, refreshing, refreshData, localData, setLocalData, handleAddLocalItem, handleAddExtraCost, handleDeleteExtraCost, handleToggleCheck } = useTripData();
 
   const [activeTab, setActiveTab] = useState('home');
   const [logisticsView, setLogisticsView] = useState('flights');
@@ -50,21 +50,19 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark font-display">
 
-      {/* Header / Top Nav (Only show on Home or custom per tab) */}
-      {activeTab === 'home' && (
-        <div className="sticky top-0 z-50 glass-panel border-b border-white/5 px-4 pt-12 pb-4 shadow-sm">
-          <div className="flex items-center justify-center">
-            <h2 className="text-slate-100 text-lg font-bold tracking-tight">Nossa Lua de Mel</h2>
-          </div>
+      {/* Header / Top Nav (Show on all tabs) */}
+      <div className="sticky top-0 z-50 glass-panel border-b border-white/5 px-4 pt-12 pb-4 shadow-sm">
+        <div className="flex items-center justify-center">
+          <h2 className="text-slate-100 text-lg font-bold tracking-tight">Nossa Lua de Mel</h2>
         </div>
-      )}
+      </div>
 
       {/* Main Content Area */}
-      {activeTab === 'home' && <HomeTab data={combinedData} tripDate={tripDate} setActiveTab={setActiveTab} setLogisticsView={setLogisticsView} localData={localData} setLocalData={setLocalData} onAddCost={handleAddExtraCost} />}
+      {activeTab === 'home' && <HomeTab data={combinedData} tripDate={tripDate} setActiveTab={setActiveTab} setLogisticsView={setLogisticsView} localData={localData} setLocalData={setLocalData} onAddCost={handleAddExtraCost} onDeleteCost={handleDeleteExtraCost} />}
       {activeTab === 'roteiro' && <ItineraryTab data={combinedData} localData={localData} setLocalData={setLocalData} />}
       {activeTab === 'logistica' && <LogisticsTab data={combinedData} view={logisticsView} setView={setLogisticsView} localData={localData} setLocalData={setLocalData} />}
-      {activeTab === 'custos' && <CostsTab data={combinedData} localData={localData} setLocalData={setLocalData} />}
-      {activeTab === 'extras' && <UtilsTab data={combinedData} localData={localData} setLocalData={setLocalData} />}
+      {activeTab === 'custos' && <CostsTab data={combinedData} localData={localData} setLocalData={setLocalData} onDeleteCost={handleDeleteExtraCost} onRefresh={refreshData} refreshing={refreshing} />}
+      {activeTab === 'extras' && <UtilsTab data={combinedData} localData={localData} setLocalData={setLocalData} onToggleCheck={handleToggleCheck} onRefresh={refreshData} refreshing={refreshing} />}
 
       {showAddModal && <AddModal onClose={() => setShowAddModal(false)} onAdd={handleAddLocalItem} data={combinedData} />}
 

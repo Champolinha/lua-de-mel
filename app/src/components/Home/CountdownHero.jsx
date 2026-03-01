@@ -28,7 +28,7 @@ export default function CountdownHero({ tripDate }) {
                     <span className="material-symbols-outlined !text-[16px] animate-pulse">flight_takeoff</span>
                     Próxima Viagem
                 </div>
-                <h1 className="text-4xl font-serif font-bold text-white mb-8 tracking-tight">Contagem Regressiva</h1>
+                <h1 className="text-4xl font-display font-bold text-white mb-8 tracking-tight">Contagem Regressiva</h1>
                 <div className="grid grid-cols-4 gap-4">
                     {[
                         { val: timeLeft.days, label: 'Dias' },

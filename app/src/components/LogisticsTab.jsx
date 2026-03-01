@@ -6,7 +6,7 @@ export default function LogisticsTab({ data, view, setView, localData, setLocalD
     const flights = data?.passagens || [];
     const hotels = data?.hoteis || [];
     const vip = data?.vip || []; return (
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+        <div className="flex-1 overflow-y-auto no-scrollbar pb-48">
             {/* Segmented Control */}
             <div className="sticky top-0 z-40 px-4 py-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md">
                 <div className="flex h-12 w-full items-center rounded-2xl bg-slate-200 dark:bg-surface-dark p-1.5 shadow-inner">

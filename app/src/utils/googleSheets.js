@@ -4,6 +4,7 @@ const SHEET_ID = '1E3ibnXtax2GbI0KDNQZom4xYkKPnTxUQe7NeebDt-3U';
 
 export const SHEET_NAMES = {
     CUSTO_FINAL: 'Custo Final',
+    CUSTOS_RAW: 'Custos',
     MAPS: 'Roteiro google maps',
     ROTEIRO: 'Roteiro final',
     VIP: 'Salas VIP',
@@ -54,6 +55,75 @@ export async function fetchSheetData(sheetName) {
     }
 }
 
+const CUSTOS_HEADER_HINTS = ['descrição', 'descricao', 'valor', 'categoria'];
+
+function looksLikeCustosHeader(row) {
+    if (!Array.isArray(row) || row.length === 0) return false;
+    const first = String(row[0] || '').trim().toLowerCase();
+    const second = String(row[1] || '').trim().toLowerCase();
+    return CUSTOS_HEADER_HINTS.some(h => first.includes(h) || second.includes(h));
+}
+
+/**
+ * Fetch Custos sheet as raw rows (no header), then build custosExtrasRemotos.
+ * Optionally skips the first row if it looks like a header (Descrição, Valor, Categoria).
+ */
+export async function fetchCustosExtrasRaw() {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAMES.CUSTOS_RAW)}&_=${new Date().getTime()}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch Custos sheet');
+        const csvText = await response.text();
+        return new Promise((resolve, reject) => {
+            Papa.parse(csvText, {
+                header: false,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    const rows = (results.data || []).filter(row => Array.isArray(row) && row.some(c => String(c || '').trim() !== ''));
+                    const skipFirst = rows.length > 0 && looksLikeCustosHeader(rows[0]);
+                    const dataRows = skipFirst ? rows.slice(1) : rows;
+                    const custosExtrasRemotos = dataRows
+                        .map(row => {
+                            const desc = String(row[0] || '').trim();
+
+                            // Let's decide if it's new (5 columns) or old (3 columns) format
+                            // New: [desc, valOrig, moeda, valBRL, cat]
+                            // Old: [desc, val, cat]
+                            let val, cat, valOrig, currency;
+
+                            if (row.length >= 5) {
+                                valOrig = String(row[1] || '').trim();
+                                currency = String(row[2] || '').trim();
+                                val = String(row[3] || '').trim(); // Value in BRL
+                                cat = String(row[4] || '').trim() || 'Outros';
+                            } else {
+                                val = String(row[1] || '').trim();
+                                cat = String(row[2] || '').trim() || 'Outros';
+                                valOrig = val;
+                                currency = 'BRL';
+                            }
+
+                            if (!desc && !val && !cat) return null;
+                            return {
+                                Descrição: desc,
+                                Valor: val, // We'll keep this as the main "Real" value for existing UI components
+                                ValorOriginal: valOrig,
+                                Moeda: currency,
+                                Categoria: cat,
+                            };
+                        })
+                        .filter(Boolean);
+                    resolve(custosExtrasRemotos);
+                },
+                error: (error) => reject(error)
+            });
+        });
+    } catch (error) {
+        console.error('Error fetching Custos extras:', error);
+        return [];
+    }
+}
+
 /**
  * Fetch all critical sheets at once (useful for initial load)
  */
@@ -71,9 +141,10 @@ export async function fetchAllDashboardData() {
         SHEET_NAMES.PALAVRAS,       // 9
     ];
 
-    const results = await Promise.all(
-        sheetsToFetch.map(sheet => fetchSheetData(sheet))
-    );
+    const [results, custosExtrasRemotos] = await Promise.all([
+        Promise.all(sheetsToFetch.map(sheet => fetchSheetData(sheet))),
+        fetchCustosExtrasRaw(),
+    ]);
 
     // ---- Process Passagens ----
     // Raw rows (no header): [companhia, trecho, codigo, valor_formatado, ...]
@@ -311,6 +382,8 @@ export async function fetchAllDashboardData() {
         cidades = [];
     }
 
+    // custosExtrasRemotos já preenchido por fetchCustosExtrasRaw()
+
     return {
         custos: results[0],
         checklist: results[1],
@@ -323,6 +396,7 @@ export async function fetchAllDashboardData() {
         cidades,
         restaurantes: results[8],
         palavras: results[9],
+        custosExtrasRemotos,
     };
 }
 
