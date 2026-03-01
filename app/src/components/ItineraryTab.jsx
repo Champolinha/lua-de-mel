@@ -61,7 +61,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
     const heroImage = getCityImage(activeCity);
 
     return (
-        <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-24">
+        <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-48">
             {/* Segmented Control */}
             <div className="sticky top-0 z-40 px-4 py-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md">
                 <div className="flex h-12 w-full items-center rounded-2xl bg-slate-200 dark:bg-surface-dark p-1.5 shadow-inner">
@@ -112,7 +112,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                         <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={heroImage} alt={activeCity} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                         <div className="absolute bottom-4 left-4">
-                            <h2 className="text-2xl font-serif font-bold text-white">{activeCity}</h2>
+                            <h2 className="text-2xl font-display font-bold text-white">{activeCity}</h2>
                             <p className="text-sm text-slate-300">{activeDia['Dia da Semana']} • Dia {activeDia['Nº Dia']}</p>
                         </div>
                         {allTimelineItems.length > 0 && (
@@ -138,7 +138,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                 </div>
                                 <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 bg-white/5">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="text-lg font-serif font-semibold text-white">Bom dia!</h3>
+                                        <h3 className="text-lg font-display font-semibold text-white">Bom dia!</h3>
                                         <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{activeDia['Horario pra acordar'] || activeDia['Horário pra acordar']}</span>
                                     </div>
                                     <p className="text-sm text-slate-400">Horário sugerido para acordar.</p>
@@ -159,7 +159,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                         <span className="material-symbols-outlined !text-[80px]">flight</span>
                                     </div>
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="text-lg font-serif font-semibold text-white">Deslocamento/Voo</h3>
+                                        <h3 className="text-lg font-display font-semibold text-white">Deslocamento/Voo</h3>
                                         {activeDia['CIA'] && activeDia['CIA'] !== '-' && <span className="text-xs font-bold text-white bg-white/20 px-2 py-1 rounded-md">{activeDia['CIA']}</span>}
                                     </div>
                                     <p className="text-sm text-white/80 mb-2">{activeDia['Horário deslocamento'] || activeDia['Horário deslocamento/vôo']}</p>
@@ -176,7 +176,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                     </div>
                                 </div>
                                 <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5">
-                                    <h3 className="text-lg font-serif font-semibold text-white mb-2">Hospedagem</h3>
+                                    <h3 className="text-lg font-display font-semibold text-white mb-2">Hospedagem</h3>
                                     <p className="text-sm text-slate-400 whitespace-pre-wrap">{activeDia['Hotel']}</p>
                                 </div>
                             </div>
@@ -191,7 +191,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                     </div>
                                 </div>
                                 <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5">
-                                    <h3 className="text-lg font-serif font-semibold text-white mb-2">O que fazer</h3>
+                                    <h3 className="text-lg font-display font-semibold text-white mb-2">O que fazer</h3>
                                     <p className="text-sm text-slate-400 whitespace-pre-wrap">{activeDia['Roteiro'] || activeDia['O que fazer']}</p>
                                 </div>
                             </div>
@@ -210,7 +210,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                         </div>
                                         <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5">
                                             <div className="flex justify-between items-start mb-1">
-                                                <h3 className="text-lg font-serif font-semibold text-white">{passeio['Passeio']}</h3>
+                                                <h3 className="text-lg font-display font-semibold text-white">{passeio['Passeio']}</h3>
                                                 {passeio['Horário'] && (
                                                     <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md">{passeio['Horário']}</span>
                                                 )}
@@ -237,7 +237,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                     </div>
                                     <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 border-l-2 border-l-cyan-500/40">
                                         <div className="flex justify-between items-start mb-1">
-                                            <h3 className="text-lg font-serif font-semibold text-white">{local['O que fazer']}</h3>
+                                            <h3 className="text-lg font-display font-semibold text-white">{local['O que fazer']}</h3>
                                             <div className="flex flex-col items-end gap-1.5">
                                                 {local['Horário'] && (
                                                     <span className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded-md">{local['Horário']}</span>
@@ -269,7 +269,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
                                 </div>
                                 <div className="glass-panel p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 opacity-80">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="text-lg font-serif font-semibold text-white">Boa noite!</h3>
+                                        <h3 className="text-lg font-display font-semibold text-white">Boa noite!</h3>
                                         <span className="text-xs font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-md">{activeDia['Horario pra dormir'] || activeDia['Horário pra dormir']}</span>
                                     </div>
                                     <p className="text-sm text-slate-400">Hora de descansar para o próximo dia.</p>

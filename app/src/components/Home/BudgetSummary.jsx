@@ -1,4 +1,5 @@
 import React from 'react';
+import { extractFloat } from '../../utils/numbers';
 
 export default function BudgetSummary({
     totalBudget,
@@ -16,7 +17,7 @@ export default function BudgetSummary({
     return (
         <section>
             <div className="flex items-center justify-between mb-5 px-1">
-                <h3 className="text-xl font-serif font-bold text-slate-100">Resumo de Custos</h3>
+                <h3 className="text-xl font-display font-bold text-slate-100">Resumo de Custos</h3>
                 <div className="h-[2px] flex-1 bg-white/5 mx-4 rounded-full"></div>
             </div>
             <div className="flex overflow-x-auto gap-5 py-4 -mx-4 px-4 snap-x snap-mandatory no-scrollbar">
@@ -108,7 +109,7 @@ export default function BudgetSummary({
                         <div key={i} className="flex items-center gap-3 glass-card rounded-xl p-3 group">
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-white truncate">{ec.Descrição || 'Sem descrição'}</p>
-                                <p className="text-xs text-slate-400">{ec.Categoria || 'Outros'} • {formatCurrency(parseFloat(ec.Valor) || 0)}</p>
+                                <p className="text-xs text-slate-400">{ec.Categoria || 'Outros'} • {formatCurrency(extractFloat(ec.Valor))}</p>
                             </div>
                             <button
                                 onClick={() => handleOpenEditCost(i)}
@@ -117,7 +118,7 @@ export default function BudgetSummary({
                                 <span className="material-symbols-outlined !text-[16px]">edit</span>
                             </button>
                             <button
-                                onClick={() => handleDeleteCost(i)}
+                                onClick={() => handleDeleteCost(ec)}
                                 className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
                             >
                                 <span className="material-symbols-outlined !text-[16px]">delete</span>

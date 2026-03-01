@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SUPPORTED_CURRENCIES, fetchExchangeRates, convertToBRL, getBRLRate } from '../utils/currencies';
 
 // Category options with icons
 const CATEGORIES = [
@@ -129,7 +130,18 @@ function SimpleSelect({ value, onChange, options, label, placeholder, icon }) {
 
 export default function AddModal({ onClose, onAdd, data }) {
     const [category, setCategory] = useState('checklist');
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({
+        Moeda: 'BRL',
+    });
+    const [exchangeRates, setExchangeRates] = useState(null);
+
+    useEffect(() => {
+        async function loadRates() {
+            const rates = await fetchExchangeRates();
+            setExchangeRates(rates);
+        }
+        loadRates();
+    }, []);
 
     const handleSave = (e) => {
         e.preventDefault();
@@ -252,11 +264,37 @@ export default function AddModal({ onClose, onAdd, data }) {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-semibold text-white/70 mb-1.5">Valor (R$)</label>
-                                    <input required type="number" step="0.01" onChange={e => handleInputChange('Valor', parseFloat(e.target.value))} className={inputClass} placeholder="150.00" />
+                                    <label className="block text-xs font-semibold text-white/70 mb-1.5">Moeda</label>
+                                    <SimpleSelect
+                                        value={formData['Moeda'] || 'BRL'}
+                                        onChange={(val) => handleInputChange('Moeda', val)}
+                                        options={SUPPORTED_CURRENCIES.map(c => ({ value: c.value, label: `${c.flag} ${c.value}` }))}
+                                        placeholder="Moeda..."
+                                    />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-white/70 mb-1.5">Valor Original</label>
+                                    <input required type="number" step="0.01" onChange={e => handleInputChange('Valor', parseFloat(e.target.value))} className={inputClass} placeholder="0.00" />
+                                </div>
+                            </div>
+
+                            {formData['Moeda'] !== 'BRL' && formData['Valor'] > 0 && (
+                                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Valor em Real (Estimado)</span>
+                                        <span className="text-sm font-bold text-white">
+                                            R$ {convertToBRL(formData['Valor'], formData['Moeda'], exchangeRates).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] text-white/40 text-right">
+                                        1 {formData['Moeda']} = R$ {getBRLRate(formData['Moeda'], exchangeRates).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-white/70 mb-1.5">Categoria</label>
                                 <SimpleSelect
-                                    label="Categoria"
                                     value={formData['Categoria'] || 'Outros'}
                                     onChange={(val) => handleInputChange('Categoria', val)}
                                     options={[

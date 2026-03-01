@@ -1,10 +1,5 @@
 import { useMemo } from 'react';
-
-const extractFloat = (str) => {
-    if (!str || typeof str !== 'string') return typeof str === 'number' ? str : 0;
-    const cleaned = str.replace(/[^\d,-]/g, '').replace(',', '.');
-    return parseFloat(cleaned) || 0;
-};
+import { extractFloat } from '../utils/numbers';
 
 export default function useCosts(data) {
     return useMemo(() => {
@@ -33,7 +28,7 @@ export default function useCosts(data) {
         let totalExtra = 0;
 
         extraCosts.forEach(ec => {
-            const val = parseFloat(ec.Valor) || 0;
+            const val = extractFloat(ec.Valor);
             totalExtra += val;
             const exists = breakdowns.find(b => b.category === (ec.Categoria || 'Outros'));
             if (exists) {

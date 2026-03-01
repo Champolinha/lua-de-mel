@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import useCosts from '../hooks/useCosts';
-import CountdownHero from './Home/CountdownHero';
+import NextEventHero from './Home/NextEventHero';
 import BudgetSummary from './Home/BudgetSummary';
 import QuickChecklist from './Home/QuickChecklist';
+import { SUPPORTED_CURRENCIES, fetchExchangeRates, convertToBRL, getBRLRate } from '../utils/currencies';
+import { findNextEvent } from '../utils/itinerary';
 
-export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView, localData, setLocalData, onAddCost }) {
+export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView, localData, setLocalData, onAddCost, onDeleteCost }) {
     const [showCostModal, setShowCostModal] = useState(false);
     const [editingCostIndex, setEditingCostIndex] = useState(null);
-    const [costForm, setCostForm] = useState({ Descrição: '', Valor: '', Categoria: 'Outros' });
+    const [costForm, setCostForm] = useState({ Descrição: '', Valor: '', Categoria: 'Outros', Moeda: 'BRL' });
+    const [exchangeRates, setExchangeRates] = useState(null);
+
+    useEffect(() => {
+        async function loadRates() {
+            const rates = await fetchExchangeRates();
+            setExchangeRates(rates);
+        }
+        loadRates();
+    }, []);
 
     const { totalBudget, totalSpent, remainingFunds, spentPercentage, breakdowns, extraCosts } = useCosts(data);
 
@@ -24,7 +35,7 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
     // --- Cost management functions ---
     const handleOpenAddCost = () => {
         setEditingCostIndex(null);
-        setCostForm({ Descrição: '', Valor: '', Categoria: 'Outros' });
+        setCostForm({ Descrição: '', Valor: '', Categoria: 'Outros', Moeda: 'BRL' });
         setShowCostModal(true);
     };
 
@@ -32,29 +43,39 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
         const cost = extraCosts[index];
         setCostForm({
             Descrição: cost.Descrição || '',
-            Valor: cost.Valor || '',
-            Categoria: cost.Categoria || 'Outros'
+            Valor: cost.ValorOriginal || cost.Valor || '',
+            Categoria: cost.Categoria || 'Outros',
+            Moeda: cost.Moeda || 'BRL'
         });
         setEditingCostIndex(index);
         setShowCostModal(true);
     };
+
+    const remoteExtrasCount = data?.custosExtrasRemotos?.length ?? 0;
 
     const handleSaveCost = (e) => {
         e.preventDefault();
         const newCost = {
             Descrição: costForm.Descrição,
             Valor: parseFloat(costForm.Valor) || 0,
-            Categoria: costForm.Categoria
+            Categoria: costForm.Categoria,
+            Moeda: costForm.Moeda || 'BRL'
         };
 
         if (editingCostIndex !== null) {
-            setLocalData(prev => {
-                const currentCustos = [...(prev.custosExtras || [])];
-                currentCustos[editingCostIndex] = newCost;
-                const next = { ...prev, custosExtras: currentCustos };
-                localStorage.setItem('tripData', JSON.stringify(next));
-                return next;
-            });
+            // Só persiste edição em itens locais (índice >= quantidade de remotos)
+            if (editingCostIndex >= remoteExtrasCount) {
+                const localIndex = editingCostIndex - remoteExtrasCount;
+                setLocalData(prev => {
+                    const currentCustos = [...(prev.custos || [])];
+                    if (localIndex >= 0 && localIndex < currentCustos.length) {
+                        currentCustos[localIndex] = newCost;
+                    }
+                    const next = { ...prev, custos: currentCustos };
+                    localStorage.setItem('tripData', JSON.stringify(next));
+                    return next;
+                });
+            }
         } else {
             onAddCost(newCost);
         }
@@ -64,19 +85,15 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
         setEditingCostIndex(null);
     };
 
-    const handleDeleteCost = (index) => {
-        setLocalData(prev => {
-            const currentCustos = [...(prev.custos || [])];
-            currentCustos.splice(index, 1);
-            const next = { ...prev, custos: currentCustos };
-            localStorage.setItem('tripData', JSON.stringify(next));
-            return next;
-        });
+    const handleDeleteCost = (costToDelete) => {
+        onDeleteCost(costToDelete);
     };
 
+    const nextEvent = findNextEvent(data);
+
     return (
-        <div className="flex-1 flex flex-col gap-6 p-4 pb-24">
-            <CountdownHero tripDate={tripDate} />
+        <div className="flex-1 flex flex-col gap-6 p-4 pb-48">
+            <NextEventHero nextEvent={nextEvent} />
 
             <BudgetSummary
                 totalBudget={totalBudget}
@@ -96,24 +113,6 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
                 pendingTasks={pendingTasks}
                 setActiveTab={setActiveTab}
             />
-
-            {/* Inspiration / Explore Small Widget */}
-            <section className="rounded-2xl relative overflow-hidden h-40 group cursor-pointer" onClick={() => setActiveTab('dicas')}>
-                <img alt="Destinos asiáticos de lua de mel" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60" src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 p-5 w-full">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Explorar</p>
-                            <h3 className="text-lg font-bold text-white">Dicas & Destinos</h3>
-                        </div>
-                        <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
-                            <span className="material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* Cost Add/Edit Modal */}
             {showCostModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -143,7 +142,19 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-semibold text-white/70 mb-1">Valor (R$)</label>
+                                    <label className="block text-xs font-semibold text-white/70 mb-1">Moeda</label>
+                                    <select
+                                        value={costForm.Moeda}
+                                        onChange={e => setCostForm(prev => ({ ...prev, Moeda: e.target.value }))}
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
+                                    >
+                                        {SUPPORTED_CURRENCIES.map(c => (
+                                            <option key={c.value} value={c.value}>{c.flag} {c.value}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-white/70 mb-1">Valor Original</label>
                                     <input
                                         required
                                         type="number"
@@ -151,24 +162,39 @@ export default function HomeTab({ data, tripDate, setActiveTab, setLogisticsView
                                         value={costForm.Valor}
                                         onChange={e => setCostForm(prev => ({ ...prev, Valor: e.target.value }))}
                                         className="w-full bg-black/20 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                                        placeholder="150.00"
+                                        placeholder="0.00"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-white/70 mb-1">Categoria</label>
-                                    <select
-                                        value={costForm.Categoria}
-                                        onChange={e => setCostForm(prev => ({ ...prev, Categoria: e.target.value }))}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                                    >
-                                        <option value="Comida">Comida</option>
-                                        <option value="Transporte">Transporte</option>
-                                        <option value="Lembrancinha">Lembrancinha</option>
-                                        <option value="Passeio">Passeio</option>
-                                        <option value="Hospedagem">Hospedagem</option>
-                                        <option value="Outros">Outros</option>
-                                    </select>
+                            </div>
+
+                            {costForm.Moeda !== 'BRL' && parseFloat(costForm.Valor) > 0 && (
+                                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Valor em Real (Estimado)</span>
+                                        <span className="text-sm font-bold text-white">
+                                            R$ {convertToBRL(parseFloat(costForm.Valor), costForm.Moeda, exchangeRates).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] text-white/40 text-right">
+                                        1 {costForm.Moeda} = R$ {getBRLRate(costForm.Moeda, exchangeRates).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                                    </div>
                                 </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-white/70 mb-1">Categoria</label>
+                                <select
+                                    value={costForm.Categoria}
+                                    onChange={e => setCostForm(prev => ({ ...prev, Categoria: e.target.value }))}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                >
+                                    <option value="Comida">Comida</option>
+                                    <option value="Transporte">Transporte</option>
+                                    <option value="Lembrancinha">Lembrancinha</option>
+                                    <option value="Passeio">Passeio</option>
+                                    <option value="Hospedagem">Hospedagem</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
                             </div>
                             <div className="mt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowCostModal(false)} className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-white/5 hover:bg-white/10 transition-colors">
