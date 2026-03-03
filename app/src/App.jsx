@@ -51,7 +51,7 @@ function App() {
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark font-display">
 
       {/* Header / Top Nav (Show on all tabs) */}
-      <div className="sticky top-0 z-50 glass-panel border-b border-white/5 px-4 pt-12 pb-4 shadow-sm">
+      <div className="sticky top-0 z-50 bg-[#211116] border-b border-white/10 px-4 pt-12 pb-4 shadow-md">
         <div className="flex items-center justify-center">
           <h2 className="text-slate-100 text-lg font-bold tracking-tight">Nossa Lua de Mel</h2>
         </div>
@@ -76,7 +76,7 @@ function App() {
       </button>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full z-50 glass-panel border-t border-white/10 pb-6 pt-3 px-6 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+      <nav className="fixed bottom-0 w-full z-50 bg-[#211116] border-t border-white/20 pb-6 pt-3 px-6 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
         <div className="flex justify-between items-center max-w-lg mx-auto">
           <button
             onClick={() => setActiveTab('home')}

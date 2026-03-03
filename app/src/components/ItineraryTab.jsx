@@ -63,7 +63,7 @@ export default function ItineraryTab({ data, localData, setLocalData }) {
     return (
         <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-48">
             {/* Segmented Control */}
-            <div className="sticky top-0 z-40 px-4 py-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md">
+            <div className="sticky top-0 z-40 px-4 py-4 bg-[#211116]">
                 <div className="flex h-12 w-full items-center rounded-2xl bg-slate-200 dark:bg-surface-dark p-1.5 shadow-inner">
                     <label className="relative flex flex-1 cursor-pointer h-full items-center justify-center rounded-lg px-2 transition-all duration-200" onClick={() => setView('roteiro')}>
                         <span className={`absolute inset-0 rounded-lg bg-white dark:bg-white/10 shadow-sm transition-opacity ${view === 'roteiro' ? 'opacity-100' : 'opacity-0'}`}></span>
